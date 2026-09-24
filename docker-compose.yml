@@ -1,0 +1,12 @@
+services:
+  web:
+    build: .
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    # 纯前端 Vite 开发服务器，构建/测试也可在此容器内执行：
+    #   docker compose run --rm web npm test
+    #   docker compose run --rm web npm run build
+    command: npm run dev -- --host 0.0.0.0
