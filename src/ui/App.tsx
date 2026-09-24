@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { parseAddr, keyOf, type Addr } from '../engine/cells';
-import { SheetEngine } from '../engine/engine';
+import { SheetEngine, type HypothesisPreview } from '../engine/engine';
 import { exportSnapshot, validateImport } from '../engine/snapshot';
 import { Grid } from './Grid';
 import { Inspector } from './Inspector';
+import { HypothesisPanel } from './HypothesisPanel';
 
 const DEMO: Record<string, string> = {
   A1: '8',
@@ -31,6 +32,7 @@ export function App() {
   const [barDraft, setBarDraft] = useState('');
   const [barEditing, setBarEditing] = useState(false);
   const [importErrors, setImportErrors] = useState<string[] | null>(null);
+  const [hypOpen, setHypOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = useCallback(() => {
@@ -140,6 +142,7 @@ export function App() {
     setImportErrors(null);
     engine.loadGrid(result.cells!);
     refresh();
+    setHypOpen(false); // 导入新网格：预演工作区不沿用
     select('A1');
   };
 
@@ -147,6 +150,22 @@ export function App() {
     engine.loadGrid(DEMO);
     refresh();
     select('F1');
+  };
+
+  // 假设修改：预演只基于当前快照读引擎，绝不写正式网格
+  const runPreview = (entries: { addr: Addr; raw: string }[]): HypothesisPreview =>
+    engine.previewHypothesis(entries);
+
+  const commitPreview = (p: HypothesisPreview): boolean => {
+    const r = engine.commitHypothesis(p);
+    if (r.ok) {
+      refresh();
+      setBarDraft(engine.getRaw(selected));
+      return true;
+    }
+    // 过期：刷新状态让面板显示过期提示，正式数据原样保留
+    refresh();
+    return false;
   };
 
   return (
@@ -158,6 +177,13 @@ export function App() {
         </button>
         <button className="btn" onClick={handleExport}>
           导出 JSON 快照
+        </button>
+        <button
+          className={`btn${hypOpen ? ' active' : ''}`}
+          onClick={() => setHypOpen((v) => !v)}
+          title="同时预演 1～3 格修改对下游与错误来源的影响"
+        >
+          假设修改
         </button>
         <button className="btn" onClick={() => fileRef.current?.click()}>
           导入 JSON
@@ -238,6 +264,17 @@ export function App() {
         />
         <span className="hint">Enter 确认 · Esc 取消</span>
       </div>
+
+      {hypOpen && (
+        <HypothesisPanel
+          revision={snap.revision}
+          initialAddr={selected}
+          onPreview={runPreview}
+          onCommit={commitPreview}
+          onCancel={() => setHypOpen(false)}
+          onJump={(addr) => select(addr)}
+        />
+      )}
 
       <div className="main">
         <Grid

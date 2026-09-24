@@ -372,3 +372,180 @@ td.cell-cycle .err-mark {
   border-radius: 2px;
   border: 1px solid var(--border);
 }
+
+/* --------------------------- 假设修改工作区 --------------------------- */
+
+.btn.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.hyp-panel {
+  background: var(--panel);
+  border-bottom: 2px solid var(--accent);
+  padding: 8px 12px 10px;
+  max-height: 38vh;
+  overflow: auto;
+  box-shadow: inset 0 -2px 6px rgba(37, 99, 235, 0.06);
+}
+
+.hyp-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.hyp-head h2 {
+  font-size: 13px;
+  margin: 0;
+  font-weight: 700;
+}
+.hyp-head .hyp-sub {
+  color: var(--muted);
+  font-size: 11px;
+  flex: 1;
+}
+.hyp-close {
+  padding: 1px 8px;
+  line-height: 1.4;
+}
+
+.hyp-input-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 6px;
+}
+.hyp-input-table th {
+  text-align: left;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+}
+.hyp-col-idx {
+  width: 24px;
+  color: var(--muted);
+  text-align: center;
+}
+.hyp-col-addr {
+  width: 120px;
+}
+.hyp-input-table input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 3px 7px;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+.hyp-input-table input:focus {
+  outline: 2px solid var(--accent-soft);
+  border-color: var(--accent);
+}
+.hyp-addr-input {
+  font-weight: 700;
+}
+
+.hyp-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 6px;
+}
+.hyp-stat {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.hyp-reject {
+  background: var(--err-bg);
+  color: var(--err);
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.hyp-stale {
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fdba74;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.hyp-nochange {
+  color: var(--ok);
+  font-size: 12px;
+  padding: 4px 2px;
+}
+
+.hyp-diff-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+}
+.hyp-diff-table th {
+  text-align: left;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--border);
+  background: #f8fafc;
+  position: sticky;
+  top: 0;
+}
+.hyp-diff-table td {
+  padding: 3px 8px;
+  border-bottom: 1px solid #eef0f3;
+  vertical-align: top;
+}
+.hyp-diff-table tbody tr {
+  cursor: pointer;
+}
+.hyp-diff-table tbody tr:hover {
+  background: #f5f8ff;
+}
+.hyp-cell-key {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.hyp-cell-out {
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  white-space: nowrap;
+  min-width: 90px;
+}
+.hyp-cell-path {
+  color: var(--muted);
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 11px;
+}
+.hyp-num {
+  color: var(--text);
+}
+.hyp-empty {
+  color: var(--muted);
+}
+.hyp-err {
+  font-weight: 700;
+}
+.hyp-err-parse,
+.hyp-err-divzero {
+  color: var(--err);
+}
+.hyp-err-cycle {
+  color: var(--cycle);
+}
+tr.hyp-row-cycle {
+  background: var(--cycle-bg);
+}
+tr.hyp-row-parse,
+tr.hyp-row-divzero {
+  background: #fffafa;
+}
+
