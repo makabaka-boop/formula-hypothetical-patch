@@ -372,3 +372,133 @@ td.cell-cycle .err-mark {
   border-radius: 2px;
   border: 1px solid var(--border);
 }
+
+/* ------------------------------- 假设修改 ------------------------------- */
+
+.whatif-panel {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 12px;
+}
+
+.whatif-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.whatif-head h2 {
+  font-size: 13px;
+  margin: 0;
+}
+
+.whatif-head .hint {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.whatif-rows {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.whatif-row {
+  display: flex;
+  gap: 4px;
+}
+
+.whatif-row input {
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 4px 6px;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.whatif-row input:focus {
+  outline: 2px solid var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.whatif-row input.addr {
+  width: 64px;
+}
+
+.whatif-row input.raw {
+  width: 180px;
+}
+
+.whatif-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.whatif-actions .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.whatif-errors {
+  margin-top: 6px;
+  color: var(--err);
+  background: var(--err-bg);
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+  padding: 6px 9px;
+}
+
+.whatif-stale {
+  margin-top: 6px;
+  color: var(--cycle);
+  background: var(--cycle-bg);
+  border: 1px solid #fcd34d;
+  border-radius: 4px;
+  padding: 6px 9px;
+  font-weight: 600;
+}
+
+.whatif-result {
+  margin-top: 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 9px;
+  background: #f8fafc;
+}
+
+.whatif-result-head {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.whatif-change {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+  padding: 1px 0;
+}
+
+.whatif-change .addr {
+  font-weight: 700;
+  min-width: 36px;
+}
+
+.whatif-change .before {
+  color: var(--muted);
+}
+
+.whatif-change .after {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.whatif-change .arrow {
+  color: var(--muted);
+}

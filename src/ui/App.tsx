@@ -4,6 +4,7 @@ import { SheetEngine } from '../engine/engine';
 import { exportSnapshot, validateImport } from '../engine/snapshot';
 import { Grid } from './Grid';
 import { Inspector } from './Inspector';
+import { WhatIfPanel } from './WhatIf';
 
 const DEMO: Record<string, string> = {
   A1: '8',
@@ -31,6 +32,7 @@ export function App() {
   const [barDraft, setBarDraft] = useState('');
   const [barEditing, setBarEditing] = useState(false);
   const [importErrors, setImportErrors] = useState<string[] | null>(null);
+  const [whatIfOpen, setWhatIfOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = useCallback(() => {
@@ -182,6 +184,12 @@ export function App() {
         >
           清空
         </button>
+        <button
+          className={`btn${whatIfOpen ? ' primary' : ''}`}
+          onClick={() => setWhatIfOpen((v) => !v)}
+        >
+          假设修改
+        </button>
         <span className="spacer" />
         <span className="revision">
           快照修订 r{snap.revision} · {snap.raw.size} 个非空格
@@ -238,6 +246,8 @@ export function App() {
         />
         <span className="hint">Enter 确认 · Esc 取消</span>
       </div>
+
+      {whatIfOpen && <WhatIfPanel engine={engine} onApplied={refresh} />}
 
       <div className="main">
         <Grid

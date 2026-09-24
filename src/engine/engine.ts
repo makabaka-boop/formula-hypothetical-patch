@@ -8,6 +8,14 @@ import {
   type ParsedCell,
 } from './parser';
 import { affectedSet, cyclePathsForScc, tarjan, topoOrder } from './graph';
+import {
+  sameOutcome,
+  validateWhatIfCandidates,
+  type WhatIfCandidate,
+  type WhatIfChange,
+  type WhatIfPreview,
+  type WhatIfResult,
+} from './whatif';
 
 /* ------------------------------- 错误类型 ------------------------------- */
 
@@ -117,14 +125,94 @@ export class SheetEngine {
     this.revision++;
   }
 
+  /* ---------------------------- 假设修改（预演） ---------------------------- */
+
+  /**
+   * 1～3 格“假设修改”预演。
+   * 把整组候选同时落到当前快照的一份副本上，从零构造最终依赖图
+   * （新生/消失的环、除零与传播路径都与候选顺序无关），
+   * 全程不写入正式网格；结果只列出发生变化的格。
+   * 地址重复或越界整组拒绝；公式语法错误遵循现有语义显示 #ERR!。
+   */
+  previewWhatIf(candidates: WhatIfCandidate[]): WhatIfResult {
+    const errors = validateWhatIfCandidates(candidates);
+    if (errors.length > 0) return { ok: false, errors };
+
+    // 同一份当前快照 + 整组修改一次性生效（不是按输入顺序逐次提交）
+    const hypothetical = new Map(this.raw);
+    for (const c of candidates) {
+      if (c.raw.trim() === '') hypothetical.delete(c.addr);
+      else hypothetical.set(c.addr, c.raw);
+    }
+    // 全量重算：不沿用旧状态，保证看到的是最终依赖图而非中间结论
+    const after = computeStates(hypothetical, new Map(), null);
+
+    const changes: WhatIfChange[] = [];
+    const keys = new Set<Addr>([...this.states.keys(), ...after.keys()]);
+    for (const addr of [...keys].sort()) {
+      const before = this.states.get(addr) ?? null;
+      const next = after.get(addr) ?? null;
+      if (!sameOutcome(before, next)) {
+        changes.push({ addr, before, after: next });
+      }
+    }
+    return {
+      ok: true,
+      preview: {
+        baseRevision: this.revision,
+        candidates: candidates.map((c) => ({ addr: c.addr, raw: c.raw })),
+        changes,
+      },
+    };
+  }
+
+  /**
+   * 采纳预演：仅当正式网格仍停留在预演依据的修订版本时，
+   * 才把整组修改一次性提交（单次重算、修订号只 +1）；
+   * 否则提示过期并保留正式数据。
+   */
+  confirmWhatIf(preview: WhatIfPreview): EditResult {
+    if (preview.baseRevision !== this.revision) {
+      return {
+        ok: false,
+        errors: [
+          `预演已过期：正式网格已从 r${preview.baseRevision} 前进到 r${this.revision}，未采纳任何修改`,
+        ],
+      };
+    }
+    const changed = new Set<Addr>();
+    for (const c of preview.candidates) {
+      if (c.raw.trim() === '') this.raw.delete(c.addr);
+      else this.raw.set(c.addr, c.raw);
+      changed.add(c.addr);
+    }
+    this.recompute(changed);
+    this.revision++;
+    return { ok: true };
+  }
+
   /* ------------------------------ 重算核心 ------------------------------ */
 
   private recompute(changed: Set<Addr> | null): void {
+    this.states = computeStates(this.raw, this.states, changed);
+  }
+}
+
+/**
+ * 由一份原始输入映射算出全部单元状态。
+ * changed 为 null 表示全量重算；否则只重算受影响集合，
+ * 未受影响的格沿用 prevStates 中的同一结果对象。
+ */
+function computeStates(
+  raw: Map<Addr, string>,
+  prevStates: Map<Addr, CellState>,
+  changed: Set<Addr> | null,
+): Map<Addr, CellState> {
     // 1) 解析全部非空输入
     const parsed = new Map<Addr, ParsedCell>();
     const parseErrors = new Map<Addr, ParseError>();
     const deps = new Map<Addr, Addr[]>();
-    for (const [key, text] of this.raw) {
+    for (const [key, text] of raw) {
       try {
         const p = parseCellInput(text);
         parsed.set(key, p);
@@ -145,7 +233,7 @@ export class SheetEngine {
       affected = new Set(parsed.keys());
     } else {
       affected = affectedSet([...changed], deps);
-      const oldCyclic = [...this.states.values()].filter(
+      const oldCyclic = [...prevStates.values()].filter(
         (s) => s.error?.type === 'cycle',
       );
       if (oldCyclic.some((s) => changed.has(s.key))) {
@@ -165,8 +253,8 @@ export class SheetEngine {
         const p = parsed.get(key);
         next.set(key, {
           key,
-          raw: this.raw.get(key) ?? '',
-          kind: this.kindOf(key, p),
+          raw: raw.get(key) ?? '',
+          kind: kindOf(raw, key, p),
           deps: deps.get(key) ?? [],
           value: null,
           error: {
@@ -232,8 +320,8 @@ export class SheetEngine {
 
     for (const key of order) {
       if (cyclic.has(key)) continue;
-      if (!affected.has(key) && this.states.has(key)) {
-        next.set(key, this.states.get(key)!);
+      if (!affected.has(key) && prevStates.has(key)) {
+        next.set(key, prevStates.get(key)!);
         continue;
       }
 
@@ -241,8 +329,8 @@ export class SheetEngine {
       if (perr) {
         next.set(key, {
           key,
-          raw: this.raw.get(key) ?? '',
-          kind: this.raw.get(key)?.startsWith('=') ? 'formula' : 'number',
+          raw: raw.get(key) ?? '',
+          kind: raw.get(key)?.startsWith('=') ? 'formula' : 'number',
           deps: [],
           value: null,
           error: {
@@ -261,7 +349,7 @@ export class SheetEngine {
         const value = evalExpr(p.expr, key);
         next.set(key, {
           key,
-          raw: this.raw.get(key) ?? '',
+          raw: raw.get(key) ?? '',
           kind: p.kind === 'formula' ? 'formula' : 'number',
           deps: deps.get(key) ?? [],
           value,
@@ -283,7 +371,7 @@ export class SheetEngine {
         }
         next.set(key, {
           key,
-          raw: this.raw.get(key) ?? '',
+          raw: raw.get(key) ?? '',
           kind: p.kind === 'formula' ? 'formula' : 'number',
           deps: deps.get(key) ?? [],
           value: null,
@@ -292,11 +380,14 @@ export class SheetEngine {
       }
     }
 
-    this.states = next;
-  }
+    return next;
+}
 
-  private kindOf(key: Addr, p: ParsedCell | undefined): 'number' | 'formula' {
-    if (p) return p.kind === 'formula' ? 'formula' : 'number';
-    return this.raw.get(key)?.startsWith('=') ? 'formula' : 'number';
-  }
+function kindOf(
+  raw: Map<Addr, string>,
+  key: Addr,
+  p: ParsedCell | undefined,
+): 'number' | 'formula' {
+  if (p) return p.kind === 'formula' ? 'formula' : 'number';
+  return raw.get(key)?.startsWith('=') ? 'formula' : 'number';
 }
